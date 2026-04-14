@@ -46,7 +46,7 @@ struct RoomResult {
 
 // MARK: - Service
 
-class StreamService {
+class StreamService: @unchecked Sendable {
     static let shared = StreamService()
 
     private let apiBase = "https://apc.j8w1d1r1p4g4q6t.cc"
@@ -240,7 +240,7 @@ enum StreamError: LocalizedError {
     }
 }
 
-class TLSDelegate: NSObject, URLSessionDelegate {
+final class TLSDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
     func urlSession(
         _ session: URLSession,
         didReceive challenge: URLAuthenticationChallenge,

@@ -1,0 +1,38 @@
+name: StreamPlayer
+options:
+  bundleIdPrefix: com.local
+  deploymentTarget:
+    iOS: "26.0"
+    macOS: "26.0"
+  xcodeVersion: "16.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+
+targets:
+  StreamPlayer-iOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/StreamPlayer
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.StreamPlayer
+        INFOPLIST_FILE: Support/Info-iOS.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: true
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+  StreamPlayer-macOS:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/StreamPlayer
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.StreamPlayer
+        INFOPLIST_FILE: Support/Info-macOS.plist
+        CODE_SIGN_STYLE: Automatic

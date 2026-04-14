@@ -2,6 +2,9 @@ import AVFoundation
 import AVKit
 import SwiftUI
 
+// MARK: - Platform Player Views
+
+#if os(macOS)
 struct PlayerView: NSViewRepresentable {
     let player: AVPlayer
 
@@ -18,7 +21,27 @@ struct PlayerView: NSViewRepresentable {
         nsView.player = player
     }
 }
+#else
+struct PlayerView: UIViewControllerRepresentable {
+    let player: AVPlayer
 
+    func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let vc = AVPlayerViewController()
+        vc.player = player
+        vc.allowsPictureInPicturePlayback = true
+        vc.entersFullScreenWhenPlaybackBegins = true
+        return vc
+    }
+
+    func updateUIViewController(_ vc: AVPlayerViewController, context: Context) {
+        vc.player = player
+    }
+}
+#endif
+
+// MARK: - Player Manager (shared)
+
+@MainActor
 class PlayerManager: ObservableObject {
     @Published var player: AVPlayer?
     @Published var isPlaying = false
@@ -38,7 +61,6 @@ class PlayerManager: ObservableObject {
             return
         }
 
-        // Use custom headers so the stream server accepts our requests
         let headers: [String: String] = [
             "Referer": siteOrigin,
             "Origin": siteOrigin,
@@ -53,15 +75,18 @@ class PlayerManager: ObservableObject {
         newPlayer.volume = volume
         newPlayer.isMuted = isMuted
 
-        // Observe errors
         NotificationCenter.default.addObserver(
             forName: .AVPlayerItemFailedToPlayToEndTime,
             object: item, queue: .main
         ) { [weak self] notification in
-            if let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error {
-                self?.errorMessage = error.localizedDescription
-            }
+            let msg = (notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error)?.localizedDescription
+            Task { @MainActor in self?.errorMessage = msg }
         }
+
+        #if os(iOS)
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
+        try? AVAudioSession.sharedInstance().setActive(true)
+        #endif
 
         self.player = newPlayer
         newPlayer.play()
@@ -70,11 +95,7 @@ class PlayerManager: ObservableObject {
 
     func togglePlayPause() {
         guard let player else { return }
-        if isPlaying {
-            player.pause()
-        } else {
-            player.play()
-        }
+        if isPlaying { player.pause() } else { player.play() }
         isPlaying.toggle()
     }
 
@@ -100,10 +121,8 @@ class PlayerManager: ObservableObject {
 
     func jumpToLive() {
         guard let player, let item = player.currentItem else { return }
-        let seekableRanges = item.seekableTimeRanges
-        if let lastRange = seekableRanges.last?.timeRangeValue {
-            let livePosition = CMTimeAdd(lastRange.start, lastRange.duration)
-            player.seek(to: livePosition)
+        if let lastRange = item.seekableTimeRanges.last?.timeRangeValue {
+            player.seek(to: CMTimeAdd(lastRange.start, lastRange.duration))
         }
     }
 }

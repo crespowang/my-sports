@@ -5,9 +5,7 @@ struct HomeView: View {
     @State private var schedule: [LiveMatch] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
-    @State private var selectedMatch: LiveMatch?
     @State private var isPlaying = false
-    @State private var streamUrl: String?
     @State private var matchInfo: MatchInfo?
     @State private var loadingMatch: String?
 
@@ -21,7 +19,9 @@ struct HomeView: View {
                 matchList
             }
         }
+        #if os(macOS)
         .frame(minWidth: 800, minHeight: 500)
+        #endif
         .task { await loadData() }
     }
 
@@ -39,7 +39,9 @@ struct HomeView: View {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 14))
                 }
+                #if os(macOS)
                 .buttonStyle(.plain)
+                #endif
                 .foregroundColor(.gray)
                 .disabled(isLoading)
             }
@@ -95,8 +97,15 @@ struct HomeView: View {
     }
 
     private func matchGrid(_ matches: [LiveMatch]) -> some View {
-        LazyVGrid(columns: [
-            GridItem(.adaptive(minimum: 220, maximum: 300), spacing: 12)
+        let minWidth: CGFloat = {
+            #if os(iOS)
+            return 150
+            #else
+            return 220
+            #endif
+        }()
+        return LazyVGrid(columns: [
+            GridItem(.adaptive(minimum: minWidth, maximum: 300), spacing: 12)
         ], spacing: 12) {
             ForEach(matches) { match in
                 MatchCard(match: match, isLoading: loadingMatch == match.id)
@@ -116,7 +125,6 @@ struct HomeView: View {
                     .ignoresSafeArea()
             }
 
-            // Overlay controls (visible on hover)
             VStack {
                 HStack {
                     Button(action: stopPlaying) {
@@ -131,7 +139,9 @@ struct HomeView: View {
                         .background(Color.black.opacity(0.6))
                         .cornerRadius(6)
                     }
+                    #if os(macOS)
                     .buttonStyle(.plain)
+                    #endif
                     .padding(16)
 
                     Spacer()
@@ -139,8 +149,10 @@ struct HomeView: View {
                 Spacer()
             }
         }
+        #if os(macOS)
         .onAppear { enterFullscreen() }
         .onDisappear { exitFullscreen() }
+        #endif
     }
 
     // MARK: - Actions
@@ -170,7 +182,6 @@ struct HomeView: View {
                 return
             }
             matchInfo = room.matchInfo
-            streamUrl = best.url
             playerManager.loadStream(url: best.url)
             isPlaying = true
         } catch {
@@ -180,11 +191,14 @@ struct HomeView: View {
     }
 
     private func stopPlaying() {
+        #if os(macOS)
         exitFullscreen()
+        #endif
         playerManager.stop()
         isPlaying = false
     }
 
+    #if os(macOS)
     private func enterFullscreen() {
         guard let window = NSApplication.shared.windows.first else { return }
         if !window.styleMask.contains(.fullScreen) {
@@ -198,6 +212,7 @@ struct HomeView: View {
             window.toggleFullScreen(nil)
         }
     }
+    #endif
 }
 
 // MARK: - Match Card
@@ -225,7 +240,6 @@ struct MatchCard: View {
                     sportIcon
                 }
 
-                // Live badge
                 if match.isLive {
                     VStack {
                         HStack {
@@ -243,7 +257,6 @@ struct MatchCard: View {
                     .padding(8)
                 }
 
-                // Viewers
                 if match.viewers > 0 {
                     VStack {
                         Spacer()
@@ -265,7 +278,6 @@ struct MatchCard: View {
                     .padding(8)
                 }
 
-                // Loading overlay
                 if isLoading {
                     Color.black.opacity(0.5)
                     ProgressView()
@@ -278,7 +290,6 @@ struct MatchCard: View {
 
             // Info
             VStack(alignment: .leading, spacing: 4) {
-                // Teams
                 if !match.homeName.isEmpty && !match.awayName.isEmpty {
                     HStack(spacing: 0) {
                         teamLogo(match.homeLogo)
@@ -303,7 +314,6 @@ struct MatchCard: View {
                         .lineLimit(2)
                 }
 
-                // Competition
                 if !match.competition.isEmpty {
                     Text(match.competition)
                         .font(.system(size: 11))
@@ -351,23 +361,23 @@ struct MatchCard: View {
 // MARK: - Corner radius helper
 
 extension View {
-    func cornerRadius(_ radius: CGFloat, corners: NSRectCorner) -> some View {
+    func cornerRadius(_ radius: CGFloat, corners: RectCornerSet) -> some View {
         clipShape(RoundedCornerShape(radius: radius, corners: corners))
     }
 }
 
-struct NSRectCorner: OptionSet {
+struct RectCornerSet: OptionSet {
     let rawValue: Int
-    static let topLeft = NSRectCorner(rawValue: 1 << 0)
-    static let topRight = NSRectCorner(rawValue: 1 << 1)
-    static let bottomLeft = NSRectCorner(rawValue: 1 << 2)
-    static let bottomRight = NSRectCorner(rawValue: 1 << 3)
-    static let allCorners: NSRectCorner = [.topLeft, .topRight, .bottomLeft, .bottomRight]
+    static let topLeft = RectCornerSet(rawValue: 1 << 0)
+    static let topRight = RectCornerSet(rawValue: 1 << 1)
+    static let bottomLeft = RectCornerSet(rawValue: 1 << 2)
+    static let bottomRight = RectCornerSet(rawValue: 1 << 3)
+    static let allCorners: RectCornerSet = [.topLeft, .topRight, .bottomLeft, .bottomRight]
 }
 
 struct RoundedCornerShape: Shape {
     var radius: CGFloat
-    var corners: NSRectCorner
+    var corners: RectCornerSet
 
     func path(in rect: CGRect) -> Path {
         var path = Path()

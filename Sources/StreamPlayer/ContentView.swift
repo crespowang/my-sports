@@ -29,10 +29,13 @@ struct ContentView: View {
                 .frame(width: 160)
             }
         }
+        #if os(iOS)
+        .preferredColorScheme(.dark)
+        #endif
     }
 }
 
-// MARK: - Manual Entry View (original setup)
+// MARK: - Manual Entry View
 
 struct ManualEntryView: View {
     let onBack: () -> Void
@@ -60,103 +63,114 @@ struct ManualEntryView: View {
     }
 
     private var setupView: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: 4) {
-                Text("Manual Stream")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.white)
-                Text("Enter a match ID to start watching")
-                    .font(.system(size: 13))
-                    .foregroundColor(.gray)
-            }
-            .padding(.top, 32)
-            .padding(.bottom, 24)
-
-            VStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Match ID").font(.system(size: 12, weight: .medium)).foregroundColor(.gray)
-                    TextField("e.g. 4517582", text: $matchId)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit { Task { await fetchStreams() } }
+        ScrollView {
+            VStack(spacing: 0) {
+                VStack(spacing: 4) {
+                    Text("Manual Stream")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.white)
+                    Text("Enter a match ID to start watching")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
                 }
+                .padding(.top, 32)
+                .padding(.bottom, 24)
 
-                HStack(spacing: 12) {
+                VStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Room ID (optional)").font(.system(size: 12, weight: .medium)).foregroundColor(.gray)
-                        TextField("Auto-detect", text: $roomId)
+                        Text("Match ID").font(.system(size: 12, weight: .medium)).foregroundColor(.gray)
+                        TextField("e.g. 4517582", text: $matchId)
                             .textFieldStyle(.roundedBorder)
+                            #if os(iOS)
+                            .keyboardType(.numberPad)
+                            #endif
+                            .onSubmit { Task { await fetchStreams() } }
                     }
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Sport").font(.system(size: 12, weight: .medium)).foregroundColor(.gray)
-                        Picker("", selection: $sportId) {
-                            Text("Football").tag("1")
-                            Text("Basketball").tag("2")
-                            Text("Esports").tag("3")
-                        }
-                        .labelsHidden()
-                        .frame(maxWidth: .infinity)
-                    }
-                }
 
-                if !streams.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Quality").font(.system(size: 12, weight: .medium)).foregroundColor(.gray)
-                        Picker("", selection: $selectedStream) {
-                            ForEach(streams) { s in
-                                Text(s.name).tag(Optional(s))
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Room ID (optional)").font(.system(size: 12, weight: .medium)).foregroundColor(.gray)
+                            TextField("Auto-detect", text: $roomId)
+                                .textFieldStyle(.roundedBorder)
+                                #if os(iOS)
+                                .keyboardType(.numberPad)
+                                #endif
+                        }
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Sport").font(.system(size: 12, weight: .medium)).foregroundColor(.gray)
+                            Picker("", selection: $sportId) {
+                                Text("Football").tag("1")
+                                Text("Basketball").tag("2")
+                                Text("Esports").tag("3")
                             }
+                            .labelsHidden()
+                            .frame(maxWidth: .infinity)
                         }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
                     }
-                }
 
-                if let info = matchInfo {
-                    HStack {
-                        Spacer()
-                        Text(info.homeName).font(.system(size: 15, weight: .semibold)).foregroundColor(.white)
-                        Text("\(info.homeScore)").font(.system(size: 20, weight: .bold)).foregroundColor(.cyan)
-                        Text("-").foregroundColor(.gray)
-                        Text("\(info.awayScore)").font(.system(size: 20, weight: .bold)).foregroundColor(.cyan)
-                        Text(info.awayName).font(.system(size: 15, weight: .semibold)).foregroundColor(.white)
-                        Spacer()
+                    if !streams.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Quality").font(.system(size: 12, weight: .medium)).foregroundColor(.gray)
+                            Picker("", selection: $selectedStream) {
+                                ForEach(streams) { s in
+                                    Text(s.name).tag(Optional(s))
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                        }
                     }
-                    .padding(.vertical, 8)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(8)
-                }
 
-                if let error = errorMessage {
-                    Text(error)
-                        .font(.system(size: 12)).foregroundColor(.red)
-                        .padding(8).frame(maxWidth: .infinity)
-                        .background(Color.red.opacity(0.1)).cornerRadius(6)
-                }
-
-                HStack(spacing: 12) {
-                    Button(action: { Task { await fetchStreams() } }) {
+                    if let info = matchInfo {
                         HStack {
-                            if isLoading { ProgressView().scaleEffect(0.7).frame(width: 16, height: 16) }
-                            Text(streams.isEmpty ? "Find Streams" : "Refresh")
+                            Spacer()
+                            Text(info.homeName).font(.system(size: 15, weight: .semibold)).foregroundColor(.white)
+                            Text("\(info.homeScore)").font(.system(size: 20, weight: .bold)).foregroundColor(.cyan)
+                            Text("-").foregroundColor(.gray)
+                            Text("\(info.awayScore)").font(.system(size: 20, weight: .bold)).foregroundColor(.cyan)
+                            Text(info.awayName).font(.system(size: 15, weight: .semibold)).foregroundColor(.white)
+                            Spacer()
                         }
-                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(8)
                     }
-                    .disabled(matchId.isEmpty || isLoading)
-                    .controlSize(.large)
 
-                    if selectedStream != nil {
-                        Button(action: play) {
-                            Text("Play").frame(maxWidth: .infinity)
+                    if let error = errorMessage {
+                        Text(error)
+                            .font(.system(size: 12)).foregroundColor(.red)
+                            .padding(8).frame(maxWidth: .infinity)
+                            .background(Color.red.opacity(0.1)).cornerRadius(6)
+                    }
+
+                    HStack(spacing: 12) {
+                        Button(action: { Task { await fetchStreams() } }) {
+                            HStack {
+                                if isLoading { ProgressView().scaleEffect(0.7).frame(width: 16, height: 16) }
+                                Text(streams.isEmpty ? "Find Streams" : "Refresh")
+                            }
+                            .frame(maxWidth: .infinity)
                         }
+                        .disabled(matchId.isEmpty || isLoading)
                         .controlSize(.large)
-                        .keyboardShortcut(.return, modifiers: [])
-                        .buttonStyle(.borderedProminent)
+
+                        if selectedStream != nil {
+                            Button(action: play) {
+                                Text("Play").frame(maxWidth: .infinity)
+                            }
+                            .controlSize(.large)
+                            #if os(iOS)
+                            .keyboardShortcut(.return)
+                            #else
+                            .keyboardShortcut(.return, modifiers: [])
+                            #endif
+                            .buttonStyle(.borderedProminent)
+                        }
                     }
                 }
+                .padding(.horizontal, 40)
+                .frame(maxWidth: 480)
             }
-            .padding(.horizontal, 40)
-            .frame(maxWidth: 480)
-            Spacer()
         }
     }
 
@@ -180,7 +194,9 @@ struct ManualEntryView: View {
                         .background(Color.black.opacity(0.6))
                         .cornerRadius(6)
                     }
+                    #if os(macOS)
                     .buttonStyle(.plain)
+                    #endif
                     .padding(16)
                     Spacer()
                 }
@@ -211,16 +227,19 @@ struct ManualEntryView: View {
         guard let stream = selectedStream else { return }
         playerManager.loadStream(url: stream.url)
         isPlaying = true
-        // Enter fullscreen
+        #if os(macOS)
         if let window = NSApplication.shared.windows.first, !window.styleMask.contains(.fullScreen) {
             window.toggleFullScreen(nil)
         }
+        #endif
     }
 
     private func stopPlaying() {
+        #if os(macOS)
         if let window = NSApplication.shared.windows.first, window.styleMask.contains(.fullScreen) {
             window.toggleFullScreen(nil)
         }
+        #endif
         playerManager.stop()
         isPlaying = false
     }

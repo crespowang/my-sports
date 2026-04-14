@@ -2,20 +2,23 @@ import SwiftUI
 
 @main
 struct StreamPlayerApp: App {
+    #if os(macOS)
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    #endif
 
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
+        #if os(macOS)
         .defaultSize(width: 960, height: 640)
+        #endif
     }
 }
 
+#if os(macOS)
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // SPM executables don't have an app bundle, so the app doesn't
-        // become frontmost automatically — force activation so text fields work.
         NSApplication.shared.setActivationPolicy(.regular)
         NSApplication.shared.activate(ignoringOtherApps: true)
     }
@@ -24,3 +27,4 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         true
     }
 }
+#endif
