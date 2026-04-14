@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0ADD64F69924A6CE50C71100 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BD0291E4A5533FBC0F441695 /* Assets.xcassets */; };
 		2AC1DC3F162760F5A742B660 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC5F763478E52B3D5F59D8E /* PlayerView.swift */; };
 		2C443E6A57BD4817197E8A07 /* StreamService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 432EA0F3A40BC5AE655CCB73 /* StreamService.swift */; };
 		37B9E4FB733ECDA867E9440A /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687740D8A3F5BC67AE022D02 /* App.swift */; };
@@ -16,6 +17,7 @@
 		980F453A0D863D6D25613C13 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687740D8A3F5BC67AE022D02 /* App.swift */; };
 		C78C07B6089BBDE9331C0AA9 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E824BA65209903DD4B3E69D /* HomeView.swift */; };
 		E7D75F25BF45D2139FF9324D /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E824BA65209903DD4B3E69D /* HomeView.swift */; };
+		F86780F4066D591DC0D97127 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BD0291E4A5533FBC0F441695 /* Assets.xcassets */; };
 		FF331C106B9F1CF014F57AE0 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443B97B19135C49338F7FC18 /* ContentView.swift */; };
 /* End PBXBuildFile section */
 
@@ -25,7 +27,8 @@
 		5AC5F763478E52B3D5F59D8E /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		687740D8A3F5BC67AE022D02 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		9E824BA65209903DD4B3E69D /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		B0A9D1C2805F8AC9A8DEB9E7 /* StreamPlayer-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "StreamPlayer-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0A9D1C2805F8AC9A8DEB9E7 /* StreamPlayer-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "StreamPlayer-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		BD0291E4A5533FBC0F441695 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D15F9F4A49C4E99439FC983F /* StreamPlayer-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "StreamPlayer-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -51,6 +54,7 @@
 			isa = PBXGroup;
 			children = (
 				687740D8A3F5BC67AE022D02 /* App.swift */,
+				BD0291E4A5533FBC0F441695 /* Assets.xcassets */,
 				443B97B19135C49338F7FC18 /* ContentView.swift */,
 				9E824BA65209903DD4B3E69D /* HomeView.swift */,
 				5AC5F763478E52B3D5F59D8E /* PlayerView.swift */,
@@ -68,6 +72,7 @@
 			buildConfigurationList = B02BB7B93636CE193F7A3E88 /* Build configuration list for PBXNativeTarget "StreamPlayer-macOS" */;
 			buildPhases = (
 				840671BE15C75968B3613F72 /* Sources */,
+				268EF290B6B66C6AA83A6DE2 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -85,6 +90,7 @@
 			buildConfigurationList = 9924DF6621C78B3AE42FA8FF /* Build configuration list for PBXNativeTarget "StreamPlayer-iOS" */;
 			buildPhases = (
 				AE0C29BFE51EB92AE54D2453 /* Sources */,
+				5FBA3887458201C99A13F38B /* Resources */,
 			);
 			buildRules = (
 			);
@@ -111,7 +117,6 @@
 						ProvisioningStyle = Automatic;
 					};
 					F9038BC56E6339B00661A637 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -135,6 +140,25 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		268EF290B6B66C6AA83A6DE2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0ADD64F69924A6CE50C71100 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5FBA3887458201C99A13F38B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F86780F4066D591DC0D97127 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		840671BE15C75968B3613F72 /* Sources */ = {
@@ -234,6 +258,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = YS993PGT7F;
 				INFOPLIST_FILE = "Support/Info-iOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -252,6 +277,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = YS993PGT7F;
 				INFOPLIST_FILE = "Support/Info-iOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
