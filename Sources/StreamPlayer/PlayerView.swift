@@ -37,6 +37,25 @@ struct PlayerView: UIViewControllerRepresentable {
         vc.player = player
     }
 }
+
+/// Force the interface to landscape and back.
+enum OrientationHelper {
+    static func forceLandscape() {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene }).first else { return }
+        let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .landscape)
+        scene.requestGeometryUpdate(prefs) { _ in }
+        scene.keyWindow?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+    }
+
+    static func forcePortrait() {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene }).first else { return }
+        let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .allButUpsideDown)
+        scene.requestGeometryUpdate(prefs) { _ in }
+        scene.keyWindow?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+    }
+}
 #endif
 
 // MARK: - Player Manager (shared)

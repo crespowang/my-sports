@@ -10,6 +10,7 @@ struct HomeView: View {
     @State private var loadingMatch: String?
 
     @StateObject private var playerManager = PlayerManager()
+    @State private var isLandscape = false
 
     var body: some View {
         ZStack {
@@ -59,19 +60,31 @@ struct HomeView: View {
                 Text(error).foregroundColor(.red).font(.system(size: 13))
                 Spacer()
             } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        if !liveMatches.isEmpty {
-                            sectionHeader("Live Now", count: liveMatches.count)
+                List {
+                    if !liveMatches.isEmpty {
+                        Section {
                             matchGrid(liveMatches)
+                        } header: {
+                            sectionHeader("Live Now", count: liveMatches.count)
                         }
-
-                        if !schedule.isEmpty {
-                            sectionHeader("Upcoming", count: schedule.count)
-                            matchGrid(schedule)
-                        }
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                     }
-                    .padding(20)
+
+                    if !schedule.isEmpty {
+                        Section {
+                            matchGrid(schedule)
+                        } header: {
+                            sectionHeader("Upcoming", count: schedule.count)
+                        }
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+                    }
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .refreshable {
+                    await loadData()
                 }
             }
         }
@@ -145,6 +158,18 @@ struct HomeView: View {
                     .padding(16)
 
                     Spacer()
+
+                    #if os(iOS)
+                    Button(action: toggleOrientation) {
+                        Image(systemName: isLandscape ? "rectangle.portrait" : "rectangle.landscape.rotate")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(6)
+                    }
+                    .padding(16)
+                    #endif
                 }
                 Spacer()
             }
@@ -194,9 +219,26 @@ struct HomeView: View {
         #if os(macOS)
         exitFullscreen()
         #endif
+        #if os(iOS)
+        if isLandscape {
+            OrientationHelper.forcePortrait()
+            isLandscape = false
+        }
+        #endif
         playerManager.stop()
         isPlaying = false
     }
+
+    #if os(iOS)
+    private func toggleOrientation() {
+        if isLandscape {
+            OrientationHelper.forcePortrait()
+        } else {
+            OrientationHelper.forceLandscape()
+        }
+        isLandscape.toggle()
+    }
+    #endif
 
     #if os(macOS)
     private func enterFullscreen() {

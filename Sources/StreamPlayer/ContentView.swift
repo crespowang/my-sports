@@ -51,6 +51,7 @@ struct ManualEntryView: View {
 
     @StateObject private var playerManager = PlayerManager()
     @State private var isPlaying = false
+    @State private var isLandscape = false
 
     var body: some View {
         ZStack {
@@ -199,6 +200,17 @@ struct ManualEntryView: View {
                     #endif
                     .padding(16)
                     Spacer()
+                    #if os(iOS)
+                    Button(action: toggleOrientation) {
+                        Image(systemName: isLandscape ? "rectangle.portrait" : "rectangle.landscape.rotate")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(6)
+                    }
+                    .padding(16)
+                    #endif
                 }
                 Spacer()
             }
@@ -240,7 +252,24 @@ struct ManualEntryView: View {
             window.toggleFullScreen(nil)
         }
         #endif
+        #if os(iOS)
+        if isLandscape {
+            OrientationHelper.forcePortrait()
+            isLandscape = false
+        }
+        #endif
         playerManager.stop()
         isPlaying = false
     }
+
+    #if os(iOS)
+    private func toggleOrientation() {
+        if isLandscape {
+            OrientationHelper.forcePortrait()
+        } else {
+            OrientationHelper.forceLandscape()
+        }
+        isLandscape.toggle()
+    }
+    #endif
 }
