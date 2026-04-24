@@ -60,29 +60,27 @@ struct HomeView: View {
                 Text(error).foregroundColor(.red).font(.system(size: 13))
                 Spacer()
             } else {
-                List {
-                    if !liveMatches.isEmpty {
-                        Section {
-                            matchGrid(liveMatches)
-                        } header: {
-                            sectionHeader("Live Now", count: liveMatches.count)
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 18) {
+                        ForEach(liveSportGroups, id: \.sport.id) { group in
+                            sportHeader(group.sport, count: group.matches.count)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 6)
+                            matchGrid(group.matches)
+                                .padding(.horizontal, 20)
                         }
-                        .listRowBackground(Color.clear)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
-                    }
 
-                    if !schedule.isEmpty {
-                        Section {
-                            matchGrid(schedule)
-                        } header: {
+                        if !schedule.isEmpty {
                             sectionHeader("Upcoming", count: schedule.count)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 6)
+                            matchGrid(schedule)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 12)
                         }
-                        .listRowBackground(Color.clear)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                     }
+                    .padding(.vertical, 12)
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
                 .refreshable {
                     await loadData()
                 }
@@ -93,9 +91,6 @@ struct HomeView: View {
 
     private func sectionHeader(_ title: String, count: Int) -> some View {
         HStack(spacing: 8) {
-            if title == "Live Now" {
-                Circle().fill(Color.red).frame(width: 8, height: 8)
-            }
             Text(title)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(.white)
@@ -107,6 +102,48 @@ struct HomeView: View {
                 .background(Color.white.opacity(0.1))
                 .cornerRadius(4)
         }
+    }
+
+    private func sportHeader(_ sport: SportCategory, count: Int) -> some View {
+        HStack(spacing: 8) {
+            Circle().fill(Color.red).frame(width: 6, height: 6)
+            Image(systemName: sport.symbol)
+                .font(.system(size: 13))
+                .foregroundColor(.white)
+            Text(sport.name)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.white)
+            Text("\(count)")
+                .font(.system(size: 12))
+                .foregroundColor(.gray)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.white.opacity(0.1))
+                .cornerRadius(4)
+        }
+    }
+
+    private struct LiveSportGroup {
+        let sport: SportCategory
+        let matches: [LiveMatch]
+    }
+
+    /// Live matches bucketed by sport, in the canonical SportCatalog order.
+    /// Unknown sport_ids collect under "Other" at the end.
+    private var liveSportGroups: [LiveSportGroup] {
+        let bySport = Dictionary(grouping: liveMatches, by: { $0.sportId })
+        var groups: [LiveSportGroup] = []
+        for cat in SportCatalog.all {
+            if let matches = bySport[cat.id], !matches.isEmpty {
+                groups.append(LiveSportGroup(sport: cat, matches: matches))
+            }
+        }
+        let known = Set(SportCatalog.all.map(\.id))
+        let leftovers = liveMatches.filter { !known.contains($0.sportId) }
+        if !leftovers.isEmpty {
+            groups.append(LiveSportGroup(sport: SportCatalog.other, matches: leftovers))
+        }
+        return groups
     }
 
     private func matchGrid(_ matches: [LiveMatch]) -> some View {
@@ -356,10 +393,28 @@ struct MatchCard: View {
                         .lineLimit(2)
                 }
 
-                if !match.competition.isEmpty {
-                    Text(match.competition)
-                        .font(.system(size: 11))
-                        .foregroundColor(.gray)
+                HStack(spacing: 6) {
+                    if !match.competition.isEmpty {
+                        Text(match.competition)
+                            .font(.system(size: 11))
+                            .foregroundColor(.gray)
+                    }
+                    if !match.broadcaster.isEmpty {
+                        HStack(spacing: 3) {
+                            Image(systemName: "mic.fill").font(.system(size: 9))
+                            Text(match.broadcaster).font(.system(size: 11))
+                        }
+                        .foregroundColor(Color(white: 0.75))
+                        .lineLimit(1)
+                    } else if match.matchId != "0" {
+                        Text("官方")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.white.opacity(0.08))
+                            .cornerRadius(3)
+                    }
                 }
             }
             .padding(10)

@@ -66,7 +66,9 @@ All APIs live at `https://apc.j8w1d1r1p4g4q6t.cc`. All requests require `Referer
 
 | Endpoint | Purpose | Used in |
 |----------|---------|---------|
-| `GET /v1/recommend/match` | Live broadcasting matches (room IDs, thumbnails, viewers) | `fetchLiveMatches()` |
+| `GET /v14/live/getlist?channel_id=68&page_size=36` | Full live broadcast list from the Recommended channel (same feed fqzb141.com uses). Response is `{data: [{rooms: [...]}]}`; rooms are either anchor rooms (real `chatroom_id`, `match_id=0`) or fallback rooms (`chatroom_id=888888888`, real `match_id`). `fetchLiveMatches()` joins them by normalized title so anchor rooms inherit a `match_id`. | `fetchLiveMatches()` |
+| `GET /v1/recommend/match` | Featured subset of live matches (~5 entries). Not used — too narrow. | — |
+| `GET /v1/live/list` | Every active broadcaster room; heavily duplicated per match, smaller match coverage. Not used. | — |
 | `GET /v1/web/plate/schedule` | Scheduled matches (team logos, scores, competition) | `fetchSchedule()` |
 | `GET /v14/channel/list` | Channel categories with live room listings | `findRooms()` |
 | `GET /v1/room?room_id=&match_id=&sport_id=` | Room details with `play_flow` quality tiers | `getRoomData()` |

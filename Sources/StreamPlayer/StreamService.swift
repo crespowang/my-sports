@@ -3,8 +3,8 @@ import Foundation
 // MARK: - Models
 
 struct LiveMatch: Identifiable {
-    let id: String           // match_id
-    let matchId: String
+    let id: String           // unique per stream — chatroom_id (not match_id)
+    let matchId: String      // "0" when the room isn't tied to a scheduled match
     let sportId: String
     let roomId: String
     let title: String
@@ -19,6 +19,7 @@ struct LiveMatch: Identifiable {
     let viewers: Int
     let screenshot: String
     let isLive: Bool
+    let broadcaster: String  // user_nickname, "" for the default/official fallback feed
 }
 
 struct MatchInfo {
@@ -44,6 +45,32 @@ struct RoomResult {
     let streams: [StreamOption]
 }
 
+struct SportCategory: Identifiable, Hashable {
+    let id: String       // sport_id as string
+    let name: String
+    let symbol: String   // SF Symbol
+}
+
+enum SportCatalog {
+    // Order matches /v1/matchs/category.
+    static let all: [SportCategory] = [
+        SportCategory(id: "1",   name: "Football",     symbol: "soccerball"),
+        SportCategory(id: "2",   name: "Basketball",   symbol: "basketball.fill"),
+        SportCategory(id: "3",   name: "Tennis",       symbol: "tennis.racket"),
+        SportCategory(id: "11",  name: "Table Tennis", symbol: "figure.table.tennis"),
+        SportCategory(id: "19",  name: "Billiards",    symbol: "cue.stick"),
+        SportCategory(id: "24",  name: "Badminton",    symbol: "figure.badminton"),
+        SportCategory(id: "101", name: "LOL",          symbol: "gamecontroller.fill"),
+        SportCategory(id: "104", name: "KOG",          symbol: "gamecontroller.fill"),
+    ]
+
+    static let other = SportCategory(id: "_other", name: "Other", symbol: "sportscourt.fill")
+
+    static func category(forSportId id: String) -> SportCategory {
+        all.first(where: { $0.id == id }) ?? other
+    }
+}
+
 // MARK: - Service
 
 class StreamService: @unchecked Sendable {
@@ -60,25 +87,59 @@ class StreamService: @unchecked Sendable {
 
     // MARK: - Home page data
 
-    /// Fetch recommended live matches (currently broadcasting)
+    /// Fetch every currently-broadcasting live room from the Recommended
+    /// channel. Each row here is a *stream*, not a match — popular matches can
+    /// have multiple broadcasters (anchor rooms with their own chatroom_id)
+    /// alongside the unmanned fallback feed on chatroom_id=888888888. We keep
+    /// them all so viewers can pick a commentator.
+    ///
+    /// Response: { data: [{ name, rooms: [...] }] }. Each room has:
+    ///   - chatroom_id (unique stream id)
+    ///   - match_id (0 for pure anchor streams)
+    ///   - user_nickname (broadcaster name, "" for fallback)
+    /// We enrich anchor rows with match_id by looking up their title in the
+    /// fallback rows, so each card can query /v1/room consistently.
     func fetchLiveMatches() async throws -> [LiveMatch] {
-        let url = URL(string: "\(apiBase)/v1/recommend/match")!
+        let url = URL(string: "\(apiBase)/v14/live/getlist?channel_id=68&page=0&page_size=36")!
         let data = try await fetchJson(url: url)
 
-        guard let dataObj = data["data"] as? [String: Any],
-              let list = dataObj["list"] as? [[String: Any]] else { return [] }
+        guard let groups = data["data"] as? [[String: Any]] else { return [] }
 
-        return list.compactMap { m in
-            guard let matchId = m["match_id"] else { return nil }
-            let title = m["room_title"] as? String ?? ""
-            // Parse "comp home-away" or "comp home VS away" from title
+        var rooms: [[String: Any]] = []
+        for g in groups {
+            if let rs = g["rooms"] as? [[String: Any]] { rooms.append(contentsOf: rs) }
+        }
+
+        var titleToMatchId: [String: String] = [:]
+        for r in rooms {
+            let mid = "\(r["match_id"] ?? 0)"
+            if mid != "0", let title = r["room_title"] as? String {
+                titleToMatchId[normalizeTitle(title)] = mid
+            }
+        }
+
+        return rooms.compactMap { r -> LiveMatch? in
+            guard let chatroomId = r["chatroom_id"] else { return nil }
+            let roomId = "\(chatroomId)"
+            let title = r["room_title"] as? String ?? ""
+            var matchIdStr = "\(r["match_id"] ?? 0)"
+            if matchIdStr == "0", let resolved = titleToMatchId[normalizeTitle(title)] {
+                matchIdStr = resolved
+            }
+            // Skip pseudo-sports with no match context (e.g. poker/variety streams).
+            let sportId = "\(r["sport_id"] ?? 1)"
+            if matchIdStr == "0" && SportCatalog.all.first(where: { $0.id == sportId }) == nil {
+                return nil
+            }
+
             let parts = parseTitle(title)
-
+            // chatroom_id=888888888 is reused across every fallback match — compose
+            // with match_id so SwiftUI's ForEach keeps each row distinct.
             return LiveMatch(
-                id: "\(matchId)",
-                matchId: "\(matchId)",
-                sportId: "\(m["sport_id"] ?? 1)",
-                roomId: "\(m["chatroom_id"] ?? "888888888")",
+                id: "\(roomId)_\(matchIdStr)",
+                matchId: matchIdStr,
+                sportId: sportId,
+                roomId: roomId,
                 title: title,
                 homeName: parts.home,
                 awayName: parts.away,
@@ -88,11 +149,19 @@ class StreamService: @unchecked Sendable {
                 awayScore: 0,
                 competition: parts.comp,
                 stage: "",
-                viewers: m["heat_number"] as? Int ?? 0,
-                screenshot: (m["match_screenshot_url"] as? String) ?? (m["screenshot_url"] as? String) ?? "",
-                isLive: (m["status"] as? Int ?? 0) == 2
+                viewers: r["heat_number"] as? Int ?? 0,
+                screenshot: (r["match_screenshot_url"] as? String) ?? (r["screenshot_url"] as? String) ?? "",
+                isLive: (r["status"] as? Int ?? 0) == 2 || (r["live_status"] as? Int ?? 0) == 1,
+                broadcaster: r["user_nickname"] as? String ?? ""
             )
         }
+    }
+
+    private func normalizeTitle(_ s: String) -> String {
+        s.lowercased()
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "vs", with: "")
+            .replacingOccurrences(of: "-", with: "")
     }
 
     /// Fetch scheduled matches (upcoming and live)
@@ -123,7 +192,8 @@ class StreamService: @unchecked Sendable {
                 stage: "",
                 viewers: 0,
                 screenshot: "",
-                isLive: status == 2 || (m["live_status"] as? Int ?? 0) == 1
+                isLive: status == 2 || (m["live_status"] as? Int ?? 0) == 1,
+                broadcaster: ""
             )
         }
     }
